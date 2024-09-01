@@ -3,8 +3,8 @@ import { useState } from 'react';
 import { SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { HomeScreen } from './HomeScreen';
-import { SearchScreen } from './SearchScreen';
+import { HomeScreen } from './Pages/HomeScreen';
+import { SearchScreen } from './Pages/SearchScreen';
 
 const Stack = createNativeStackNavigator();
 export default function App() {
