@@ -1,7 +1,7 @@
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
-import { useState } from "react";
-import { SafeAreaView, Button, TextInput, StyleSheet, View, Text, TouchableOpacity } from "react-native";
+import { useEffect, useState } from "react";
+import { SafeAreaView, Button, TextInput, StyleSheet, View, Text, TouchableOpacity, ScrollView } from "react-native";
 import { URL } from "../utils/api";
 import { API_KEY } from "../config";
 
@@ -11,26 +11,32 @@ type Props = {
 };
 
 export const HomeScreen: React.FC<Props> = ({ navigation }) => {
-  const [carPark, setCarPark] = useState<String>('');
   const [data, setData] = useState<string[][]>([]);
-  const fetchCarParks = async () => {
-    try{
-      fetch(URL+'/carpark', {
-        headers: {
-          'Authorization': `apikey ${API_KEY}`,
-          'Content-Type': 'application/json'
-        }
-      })
-        .then((res) => res.json())
-        .then((data: Record<string, string>) => {
-          const removeHistorical = Object.entries(data).slice(5);
-          const updatedData = removeHistorical.map(([key, value]) => [key, value.slice(12)]);
-          setData(updatedData);
-        });
-    } catch (e) {
-      console.error(e)
-    }
-  }
+  const [userInput, setUserInput] = useState<string>('');
+
+  useEffect(() => {
+    const fetchCarParks = async () => {
+      try{
+        fetch(URL+'/carpark', {
+          headers: {
+            'Authorization': `apikey ${API_KEY}`,
+            'Content-Type': 'application/json'
+          }
+        })
+          .then((res) => res.json())
+          .then((data: Record<string, string>) => {
+            const removeHistorical = Object.entries(data).slice(5);
+            const updatedData = removeHistorical.map(([key, value]) => [key, value.slice(12)]);
+            updatedData.sort((a, b) => a[1].localeCompare(b[1]));
+            setData(updatedData);
+          });
+      } catch (e) {
+        console.error(e)
+      }
+    };
+    fetchCarParks();
+  }, [])
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar />
@@ -38,25 +44,24 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
         <TextInput
           style={styles.textInput}
           placeholder="Enter Carpark"
-          onChangeText={(text) => setCarPark(text)}
-          onSubmitEditing={fetchCarParks}
+          onChangeText={(text) => setUserInput(text)}
         />
       </View>
-      <View>
-        <Text>{carPark}</Text>
-      </View>
-      <Button title='Next page' onPress={() => navigation.navigate('Search')} />
-      <View>
-        {data &&
-          data.map(([id, carpark]) => {
-            return (
-              <TouchableOpacity key={id} onPress={() => console.log(id)}>
-                <Text>{carpark}</Text>
-              </TouchableOpacity>
-            );
-          })
-        }
-      </View>
+      <ScrollView style={styles.carParkContainer}>
+        <View>
+          {data &&
+            data.filter(([_, carpark]) => carpark.toLowerCase().includes(userInput.toLowerCase())).map(([id, carpark]) => {
+              return (
+                <TouchableOpacity key={id} onPress={() => console.log(id)}>
+                  <View>
+                    <Text>{carpark}</Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })
+          }
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -78,5 +83,9 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     width: '80%'
-  }
+  },
+  carParkContainer: {
+    flex: 1,
+    width: '100%'
+  },
 })
