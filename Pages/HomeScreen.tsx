@@ -52,7 +52,10 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
           {data &&
             data.filter(([_, carpark]) => carpark.toLowerCase().includes(userInput.toLowerCase())).map(([id, carpark]) => {
               return (
-                <TouchableOpacity key={id} onPress={() => console.log(id)}>
+                <TouchableOpacity
+                  key={id}
+                  onPress={() => navigation.navigate('Carpark', { facilityId: id })}
+                >
                   <View>
                     <Text>{carpark}</Text>
                   </View>
@@ -86,6 +89,7 @@ const styles = StyleSheet.create({
   },
   carParkContainer: {
     flex: 1,
-    width: '100%'
+    width: '100%',
+    gap: 4
   },
 })
