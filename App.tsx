@@ -11,7 +11,7 @@ export default function App() {
     <NavigationContainer>
       <RootStack.Navigator initialRouteName='Home'>
         <RootStack.Screen name='Home' component={HomeScreen} />
-        <RootStack.Screen name='Carpark' component={CarparkScreen} getId={({ params }) => params.facilityId} />
+        <RootStack.Screen name='Carpark' component={CarparkScreen} options={({route}) => ({ title: route.params.facilityName })}/>
       </RootStack.Navigator>
     </NavigationContainer>
   );

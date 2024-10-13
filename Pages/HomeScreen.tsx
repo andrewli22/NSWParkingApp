@@ -54,10 +54,10 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
               return (
                 <TouchableOpacity
                   key={id}
-                  onPress={() => navigation.navigate('Carpark', { facilityId: id })}
+                  onPress={() => navigation.navigate('Carpark', { facilityId: id, facilityName: carpark })}
                 >
-                  <View>
-                    <Text>{carpark}</Text>
+                  <View style={styles.carParkItem}>
+                    <Text style={styles.carParkItemText}>{carpark}</Text>
                   </View>
                 </TouchableOpacity>
               );
@@ -88,8 +88,14 @@ const styles = StyleSheet.create({
     width: '80%'
   },
   carParkContainer: {
-    flex: 1,
     width: '100%',
-    gap: 4
+    padding: 20
   },
+  carParkItem: {
+    marginBottom: 10,
+    padding: 5,
+  },
+  carParkItemText: {
+    fontSize: 16
+  }
 })

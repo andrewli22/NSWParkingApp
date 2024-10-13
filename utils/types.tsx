@@ -1,4 +1,4 @@
 export type RootStackParamList = {
   Home: undefined;
-  Carpark: { facilityId: string };
+  Carpark: { facilityId: string, facilityName: string };
 }
