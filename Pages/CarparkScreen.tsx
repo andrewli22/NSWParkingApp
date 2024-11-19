@@ -16,37 +16,40 @@ export const CarparkScreen = ({ route }: Props) => {
   const [total, setTotal] = useState<number>(0);
 
   const pieData = [
-    {value: spots-total, color: 'blue'},
-    {value: spots, color: 'red'},
+    {value: total , color: '#ED6665', gradientCenterColor: 'pink'},
+    {value: spots-total, color: '#177AD5', gradientCenterColor: 'lightblue'},
   ];
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     setTimeout(() => {
       setRefreshing(false);
-    }, 2000);
+      fetchCarParks();
+    }, 1000);
   }, []);
 
+  const fetchCarParks = () => {
+    try{
+      fetch(URL+`/carpark?facility=${facilityId}`, {
+        headers: {
+          'Authorization': `apikey ${API_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          setTotal(Number(data.occupancy.total));
+          setSpots(Number(data.spots));
+        });
+    } catch (e) {
+      console.error(e)
+    }
+  };
+
   useEffect(() => {
-    const fetchCarParks = async () => {
-      try{
-        fetch(URL+`/carpark?facility=${facilityId}`, {
-          headers: {
-            'Authorization': `apikey ${API_KEY}`,
-            'Content-Type': 'application/json'
-          }
-        })
-          .then((res) => res.json())
-          .then((data) => {
-            setTotal(data.occupancy.total);
-            setSpots(data.spots);
-          });
-      } catch (e) {
-        console.error(e)
-      }
-    };
     fetchCarParks();
   }, [])
+
   return (
     <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
       <ScrollView
@@ -55,13 +58,18 @@ export const CarparkScreen = ({ route }: Props) => {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        <View style={styles.pieWrapper}>
-          <Text>{spots - total} / {spots}</Text>
-        </View>
         <View>
+          <Text style={{ fontSize: 25 }}>Number of spots available</Text>
+        </View>
+        <View style={styles.pieChart}>
+          <View style={styles.pieTextContainer}>
+            <View style={styles.pieText}>
+              <Text style={{ fontSize: 40 }}>{spots - total} / {spots}</Text>
+            </View>
+          </View>
           <PieChart
             donut
-            // semiCircle={true}
+            semiCircle={true}
             radius={150}
             innerRadius={130}
             data={pieData}
@@ -75,14 +83,29 @@ export const CarparkScreen = ({ route }: Props) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    padding: 10
   },
   scrollView: {
     flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pieWrapper: {
+  pieChart: {
+    height: '100%',
+    width: '100%',
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 50
+  },
+  pieText: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pieTextContainer: {
     zIndex: 1,
-    position: 'absolute'
+    position: 'absolute',
+    top: 340
   }
 });

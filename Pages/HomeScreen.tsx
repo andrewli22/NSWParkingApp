@@ -85,11 +85,13 @@ const styles = StyleSheet.create({
     width: '100%'
   },
   inputContainer: {
-    width: '80%'
+    width: '80%',
+    margin: 10
   },
   carParkContainer: {
     width: '100%',
-    padding: 20
+    marginBottom: 10,
+    paddingHorizontal: 20
   },
   carParkItem: {
     marginBottom: 10,
