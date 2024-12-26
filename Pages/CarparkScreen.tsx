@@ -1,3 +1,4 @@
+import React from 'react';
 import { View, Text, RefreshControl, ScrollView, StyleSheet } from 'react-native'
 import { RootStackParamList } from '../utils/types';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
