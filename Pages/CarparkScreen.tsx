@@ -17,8 +17,8 @@ export const CarparkScreen = ({ route }: Props) => {
   const [total, setTotal] = useState<number>(0);
 
   const pieData = [
-    {value: total , color: '#ED6665', gradientCenterColor: 'pink'},
-    {value: spots-total, color: '#177AD5', gradientCenterColor: 'lightblue'},
+    {value: total , color: '#FF2E2E'},
+    {value: spots-total, color: '#00D100'},
   ];
 
   const onRefresh = useCallback(() => {
@@ -64,13 +64,10 @@ export const CarparkScreen = ({ route }: Props) => {
         </View>
         <View style={styles.pieChart}>
           <View style={styles.pieTextContainer}>
-            <View style={styles.pieText}>
-              <Text style={{ fontSize: 40 }}>{spots - total} / {spots}</Text>
-            </View>
+            <Text style={styles.pieText}>{spots - total} / {spots}</Text>
           </View>
           <PieChart
             donut
-            semiCircle={true}
             radius={150}
             innerRadius={130}
             data={pieData}
@@ -103,10 +100,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    fontSize: 40
   },
   pieTextContainer: {
     zIndex: 1,
     position: 'absolute',
-    top: 340
+    top: 310
   }
 });
