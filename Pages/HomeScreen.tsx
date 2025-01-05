@@ -1,12 +1,11 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import { SafeAreaView, Button, TextInput, StyleSheet, View, Text, TouchableOpacity, ScrollView } from "react-native";
 import { URL } from "../utils/api";
 import { API_KEY } from "../config";
-import { loadPinnedCarparks, handlePinnedCarparks } from '../utils/storage';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { fetchPinnedCarparks, handleStoreCarparks, removePinnedCarpark } from '../utils/storage';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<any>;
 type Props = {
@@ -16,8 +15,8 @@ type Props = {
 export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const [carparks, setCarparks] = useState<string[][]>([]);
   const [userInput, setUserInput] = useState<string>('');
-  const [pinnedCarparks, setPinnedCarparks] = useState<{ [key: string]: string }>({});
-  const [userPin, setUserPin] = useState<boolean>(false);
+  const [pinnedCarparks, setPinnedCarparks] = useState<{[key: string]: string}>({});
+  const [pin, setPin] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchCarparks = async () => {
@@ -30,40 +29,44 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
         })
           .then((res) => res.json())
           .then((carparks: Record<string, string>) => {
-            const removeHistorical = Object.entries(carparks).slice(5);
+            let removeHistorical = Object.entries(carparks).slice(5);
+            removeHistorical = removeHistorical.filter((cp) => !(cp[0] in pinnedCarparks));
             const updatedData = removeHistorical.map(([key, value]) => [key, value.slice(12)]);
-            updatedData.sort((a, b) => a[1].localeCompare(b[1]));
             setCarparks(updatedData);
           });
       } catch (e) {
         console.error(e)
       }
     };
-    const getPinnedCarparks = async () => {
-      try {
-        const loadCarparks = await loadPinnedCarparks();
-        console.log("loading carparks");
-        console.log(loadCarparks);
-        setPinnedCarparks(loadCarparks);
-        setUserPin(false);
-     } catch (e) {
-        console.error(e);
-      }
-    }
-    getPinnedCarparks();
     fetchCarparks();
-  }, [userPin]);
+  }, []);
 
-  const handleClearStorage = async () => {
-    try {
-      await AsyncStorage.clear();
-      console.log('clearing storage');
-      setPinnedCarparks({});
-      setUserPin(!userPin);
-    } catch (e) {
-      console.error(e);
+  useEffect(() => {
+    const getPinnedCP = async () => {
+      const res = await fetchPinnedCarparks();
+      setPinnedCarparks(res);
     }
+    getPinnedCP();
+  }, [pin])
+
+  const handlePinCarpark = async (id: string, carpark: string) => {
+    await handleStoreCarparks({ id, carpark });
+    setCarparks((prev) => (prev.filter((cp) => cp[0] !== id)));
+    setPin(!pin)
   }
+
+  const handleUnpinCarpark = async (id: string, carpark: string) => {
+    await removePinnedCarpark(id);
+    setCarparks((prev) => ([...prev, [id, carpark]]));
+    setPin(!pin);
+  }
+
+  const filteredAndSortedCarparks = useMemo(() => {
+    return (carparks
+      .filter(([,carpark]) => carpark.toLowerCase().includes(userInput.toLowerCase()))
+      .sort((a, b) => a[1].localeCompare(b[1]))
+    );
+  }, [carparks, userInput]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -73,21 +76,12 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
           style={styles.textInput}
           placeholder="Enter Carpark"
           onChangeText={(text) => setUserInput(text)}
-        />
-      </View>
-      <View>
-        <Button 
-          title='asyncstorage'
-          onPress={() => console.log(pinnedCarparks)}
-        />
-        <Button 
-          title='clear storage'
-          onPress={() => {handleClearStorage()}}
-        />
+        />  
       </View>
       <ScrollView style={styles.carParkListContainer}>
-        {carparks &&
-          carparks.filter(([,carpark]) => carpark.toLowerCase().includes(userInput.toLowerCase())).map(([id, carpark]) => {
+        {pinnedCarparks &&
+        
+          Object.entries(pinnedCarparks).map(([id, carpark]) => {
             return (
               <TouchableOpacity
                 key={id}
@@ -95,7 +89,23 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
               >
                 <View style={styles.carParkItemRow}>
                   <Text style={styles.textSize}>{carpark}</Text>
-                  <Button title='pin' onPress={() => {handlePinnedCarparks({ id, carpark, setUserPin })}}/>
+                  <Button title='unpin' onPress={() => handleUnpinCarpark(id, carpark)}/>
+                </View>
+              </TouchableOpacity>
+            )
+          })
+
+        }
+        {carparks &&
+          filteredAndSortedCarparks.map(([id, carpark]) => {
+            return (
+              <TouchableOpacity
+                key={id}
+                onPress={() => navigation.navigate('Carpark', { facilityId: id, facilityName: carpark })}
+              >
+                <View style={styles.carParkItemRow}>
+                  <Text style={styles.textSize}>{carpark}</Text>
+                  <Button title='pin' onPress={() => handlePinCarpark(id, carpark)}/>
                 </View>
               </TouchableOpacity>
             );
