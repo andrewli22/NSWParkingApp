@@ -1,11 +1,13 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
-import { SafeAreaView, Button, TextInput, StyleSheet, View, Text, TouchableOpacity, ScrollView } from "react-native";
+import { SafeAreaView, Button, TextInput, StyleSheet, View, Text, TouchableOpacity, ScrollView, SectionList } from "react-native";
 import { URL } from "../utils/api";
 import { API_KEY } from "../config";
 import { fetchPinnedCarparks, handleStoreCarparks, removePinnedCarpark } from '../utils/storage';
+import { SectionDataType, CarParkDataType } from '../utils/types';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<any>;
 type Props = {
@@ -13,33 +15,68 @@ type Props = {
 };
 
 export const HomeScreen: React.FC<Props> = ({ navigation }) => {
+  const [data, setData] = useState<SectionDataType[]>([]);
   const [carparks, setCarparks] = useState<string[][]>([]);
-  const [userInput, setUserInput] = useState<string>('');
+  const [pinnedData, setPinnedData] = useState<SectionDataType[]>([]);
   const [pinnedCarparks, setPinnedCarparks] = useState<{[key: string]: string}>({});
   const [pin, setPin] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchCarparks = async () => {
       try {
-        fetch(URL+'/carpark', {
+        const response = await fetch(URL+'/carpark', {
           headers: {
             'Authorization': `apikey ${API_KEY}`,
             'Content-Type': 'application/json'
           }
         })
-          .then((res) => res.json())
-          .then((carparks: Record<string, string>) => {
-            let removeHistorical = Object.entries(carparks).slice(5);
-            removeHistorical = removeHistorical.filter((cp) => !(cp[0] in pinnedCarparks));
-            const updatedData = removeHistorical.map(([key, value]) => [key, value.slice(12)]);
-            setCarparks(updatedData);
-          });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch carparks: ${response.statusText}`);
+        }
+        const carparks: Record<string, string> = await response.json();
+        // Remove historical data and filter out pinned carparks
+        const cleanedData = Object.entries(carparks).slice(5)
+          .filter(([id]) => !(id in pinnedCarparks))
+          .map(([key, value]) => [key, value.slice(12)]);
+        const sectionedData: SectionDataType[] = convertToSectionData(groupData(cleanedData));
+        sectionedData.sort((a, b) => (a.title.localeCompare(b.title)))
+
+        sectionedData.unshift(transformData(Object.entries(pinnedCarparks)))
+
+        setData(sectionedData);
       } catch (e) {
         console.error(e)
       }
     };
     fetchCarparks();
   }, []);
+
+  // Group data by first letter of carpark name
+  const groupData = (data: string[][]) => {
+    return data.reduce((acc, [id, carpark]) => {
+      const firstLetter = carpark.charAt(0).toUpperCase();
+      if (!acc[firstLetter]) {
+        acc[firstLetter] = [];
+      }
+      acc[firstLetter].push({ id, name: carpark });
+      return acc;
+    }, {} as Record<string, CarParkDataType[]>);
+  };
+
+  const convertToSectionData = (groupedData: Record<string, CarParkDataType[]>) => {
+    return Object.entries(groupedData).map(([title, data]) => ({ title, data }));
+  };
+
+  const transformData = (pinnedCP: string[][]) => {
+    return {
+      title: 'Pinned',
+      data: pinnedCP.map((cp) => ({
+        id: cp[0],
+        name: cp[1]
+      }))
+    };
+  }
 
   useEffect(() => {
     const getPinnedCP = async () => {
@@ -51,8 +88,16 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
   const handlePinCarpark = async (id: string, carpark: string) => {
     await handleStoreCarparks({ id, carpark });
-    setCarparks((prev) => (prev.filter((cp) => cp[0] !== id)));
-    setPin(!pin)
+    const firstCh = carpark.charAt(0);
+    // Remove carpark from corresponding section
+    const tempData = data;
+    const section = tempData.find((section) => (section.title === firstCh));
+    if (section) {
+      section.data = section.data.filter((cp) => (cp.id !== id));
+    }
+    // Add carpark to pinned section
+    // setCarparks((prev) => (prev.filter((cp) => cp[0] !== id)));
+    // setPin(!pin)
   }
 
   const handleUnpinCarpark = async (id: string, carpark: string) => {
@@ -61,57 +106,46 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     setPin(!pin);
   }
 
-  const filteredAndSortedCarparks = useMemo(() => {
-    return (carparks
-      .filter(([,carpark]) => carpark.toLowerCase().includes(userInput.toLowerCase()))
-      .sort((a, b) => a[1].localeCompare(b[1]))
-    );
-  }, [carparks, userInput]);
+  const handleClearAsync = async () => {
+    try {
+      await AsyncStorage.clear()
+    } catch(e) {
+      console.error(e);
+    }
+  }
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar />
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.textInput}
-          placeholder="Enter Carpark"
-          onChangeText={(text) => setUserInput(text)}
-        />  
-      </View>
-      <ScrollView style={styles.carParkListContainer}>
-        {pinnedCarparks &&
-        
-          Object.entries(pinnedCarparks).map(([id, carpark]) => {
-            return (
-              <TouchableOpacity
-                key={id}
-                onPress={() => navigation.navigate('Carpark', { facilityId: id, facilityName: carpark })}
-              >
-                <View style={styles.carParkItemRow}>
-                  <Text style={styles.textSize}>{carpark}</Text>
-                  <Button title='unpin' onPress={() => handleUnpinCarpark(id, carpark)}/>
-                </View>
-              </TouchableOpacity>
-            )
-          })
-
-        }
-        {carparks &&
-          filteredAndSortedCarparks.map(([id, carpark]) => {
-            return (
-              <TouchableOpacity
-                key={id}
-                onPress={() => navigation.navigate('Carpark', { facilityId: id, facilityName: carpark })}
-              >
-                <View style={styles.carParkItemRow}>
-                  <Text style={styles.textSize}>{carpark}</Text>
-                  <Button title='pin' onPress={() => handlePinCarpark(id, carpark)}/>
-                </View>
-              </TouchableOpacity>
-            );
-          })
-        }
-      </ScrollView>
+        <Button
+          title='clear'
+          onPress={() => handleClearAsync()}
+        />
+        <SectionList
+          style={styles.carParkListContainer}
+          sections={data}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Carpark', { 
+                facilityId: item.id,
+                facilityName: item.name 
+              })}
+            >
+              <View style={styles.carParkItemRow}>
+                <Text style={styles.textSize}>{item.name}</Text>
+                <Button 
+                  title='pin' 
+                  onPress={() => handlePinCarpark(item.id, item.name)}
+                />
+              </View>
+            </TouchableOpacity>
+          )}
+          renderSectionHeader={({ section: { title }}) => (
+            <View>
+              <Text>{title}</Text>
+            </View>
+          )}
+        />
     </SafeAreaView>
   );
 }
