@@ -34,14 +34,18 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
         if (!response.ok) {
           throw new Error(`Failed to fetch carparks: ${response.statusText}`);
         }
+
         const carparks: Record<string, string> = await response.json();
         // Remove historical data and filter out pinned carparks
         const cleanedData = Object.entries(carparks).slice(5)
           .filter(([id]) => !(id in pinnedCarparks))
           .map(([key, value]) => [key, value.slice(12)]);
+        
+        // Convert data to sectionList data structure then sort titles
         const sectionedData: SectionDataType[] = convertToSectionData(groupData(cleanedData));
         sectionedData.sort((a, b) => (a.title.localeCompare(b.title)))
 
+        // Add the pinned carparks at the top of the list so it gets rendered first in the list
         sectionedData.unshift(transformData(Object.entries(pinnedCarparks)))
 
         setData(sectionedData);
@@ -63,7 +67,8 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
       return acc;
     }, {} as Record<string, CarParkDataType[]>);
   };
-
+  
+  // convert to appropriate data structure to render sectionList
   const convertToSectionData = (groupedData: Record<string, CarParkDataType[]>) => {
     return Object.entries(groupedData).map(([title, data]) => ({ title, data }));
   };
@@ -84,7 +89,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
       setPinnedCarparks(res);
     }
     getPinnedCP();
-  }, [pin])
+  }, [])
 
   const handlePinCarpark = async (id: string, carpark: string) => {
     await handleStoreCarparks({ id, carpark });
@@ -92,18 +97,24 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     // Remove carpark from corresponding section
     const tempData = data;
     const section = tempData.find((section) => (section.title === firstCh));
-    if (section) {
-      section.data = section.data.filter((cp) => (cp.id !== id));
+    if (!section) {
+      throw new Error("Section not found");
     }
+    section.data = section.data.filter((cp) => (cp.id !== id));
     // Add carpark to pinned section
-    // setCarparks((prev) => (prev.filter((cp) => cp[0] !== id)));
-    // setPin(!pin)
+    const pinnedSection = tempData.find((section) => (section.title === 'Pinned'));
+    if (!pinnedSection) {
+      throw new Error("Pinned Section not found");
+    }
+    pinnedSection.data.push({"id": id, "name": carpark});
+    for (let section of tempData) {
+      console.log(section);
+    }
+    setData(tempData);
   }
 
   const handleUnpinCarpark = async (id: string, carpark: string) => {
-    await removePinnedCarpark(id);
-    setCarparks((prev) => ([...prev, [id, carpark]]));
-    setPin(!pin);
+    
   }
 
   const handleClearAsync = async () => {
@@ -113,6 +124,39 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
       console.error(e);
     }
   }
+  /**
+   * Might use this function to make code cleaner
+   */
+  // const conditionalSectionFilter = () => {
+  //   const filteredSections = data.filter((section) => section.data.length > 0);
+  //   return (
+  //     <SectionList
+  //       style={styles.carParkListContainer}
+  //       sections={filteredSections}
+  //       renderItem={({ item }) => (
+  //         <TouchableOpacity
+  //           onPress={() => navigation.navigate('Carpark', { 
+  //             facilityId: item.id,
+  //             facilityName: item.name 
+  //           })}
+  //         >
+  //           <View style={styles.carParkItemRow}>
+  //             <Text style={styles.textSize}>{item.name}</Text>
+  //             <Button 
+  //               title='pin' 
+  //               onPress={() => handlePinCarpark(item.id, item.name)}
+  //             />
+  //           </View>
+  //         </TouchableOpacity>
+  //       )}
+  //       renderSectionHeader={({ section: { title }}) => (
+  //         <View>
+  //           <Text>{title}</Text>
+  //         </View>
+  //       )}
+  //     />
+  //   )
+  // }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -123,7 +167,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
         />
         <SectionList
           style={styles.carParkListContainer}
-          sections={data}
+          sections={data.filter((section) => section.data.length > 0)}
           renderItem={({ item }) => (
             <TouchableOpacity
               onPress={() => navigation.navigate('Carpark', { 
