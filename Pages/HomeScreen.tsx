@@ -93,28 +93,60 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
   const handlePinCarpark = async (id: string, carpark: string) => {
     await handleStoreCarparks({ id, carpark });
-    const firstCh = carpark.charAt(0);
-    // Remove carpark from corresponding section
-    const tempData = data;
-    const section = tempData.find((section) => (section.title === firstCh));
-    if (!section) {
-      throw new Error("Section not found");
-    }
-    section.data = section.data.filter((cp) => (cp.id !== id));
-    // Add carpark to pinned section
-    const pinnedSection = tempData.find((section) => (section.title === 'Pinned'));
-    if (!pinnedSection) {
-      throw new Error("Pinned Section not found");
-    }
-    pinnedSection.data.push({"id": id, "name": carpark});
-    for (let section of tempData) {
-      console.log(section);
-    }
-    setData(tempData);
+    setData((prevData) => {
+      const newCarpark = { "id": id, "name": carpark };
+      const sourceSection = carpark.charAt(0);
+      
+      // Create new array with all updates at once
+      return (prevData.map(section => {
+        switch (section.title) {
+          case sourceSection:
+            // Remove from original section
+            return {
+              ...section,
+              data: section.data.filter((cp) => cp.id !== id)
+            };
+            
+          case 'Pinned':
+            // Add to pinned section
+            return {
+              ...section,
+              data: [...section.data, newCarpark]
+            };
+            
+          default:
+            return section;
+        }
+      }));
+    });
   }
 
   const handleUnpinCarpark = async (id: string, carpark: string) => {
-    
+    await removePinnedCarpark(id);
+    setData((prevData) => {
+      const sourceSection = carpark.charAt(0);
+      const unpinnedCarpark = { "id": id, "name": carpark }
+      return (
+        prevData.map((section) => {
+          switch(section.title) {
+            // Add to corresponding section
+            case sourceSection:
+              return {
+                ...section,
+                data: [...section.data, unpinnedCarpark]
+              }
+            // Remove from pinned section
+            case 'Pinned':
+              return {
+                ...section,
+                data: section.data.filter((cp) => cp.id !== id)
+              }
+            default:
+              return section
+          }
+        })
+      )
+    })
   }
 
   const handleClearAsync = async () => {
@@ -124,39 +156,6 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
       console.error(e);
     }
   }
-  /**
-   * Might use this function to make code cleaner
-   */
-  // const conditionalSectionFilter = () => {
-  //   const filteredSections = data.filter((section) => section.data.length > 0);
-  //   return (
-  //     <SectionList
-  //       style={styles.carParkListContainer}
-  //       sections={filteredSections}
-  //       renderItem={({ item }) => (
-  //         <TouchableOpacity
-  //           onPress={() => navigation.navigate('Carpark', { 
-  //             facilityId: item.id,
-  //             facilityName: item.name 
-  //           })}
-  //         >
-  //           <View style={styles.carParkItemRow}>
-  //             <Text style={styles.textSize}>{item.name}</Text>
-  //             <Button 
-  //               title='pin' 
-  //               onPress={() => handlePinCarpark(item.id, item.name)}
-  //             />
-  //           </View>
-  //         </TouchableOpacity>
-  //       )}
-  //       renderSectionHeader={({ section: { title }}) => (
-  //         <View>
-  //           <Text>{title}</Text>
-  //         </View>
-  //       )}
-  //     />
-  //   )
-  // }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -168,7 +167,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
         <SectionList
           style={styles.carParkListContainer}
           sections={data.filter((section) => section.data.length > 0)}
-          renderItem={({ item }) => (
+          renderItem={({ item, section }) => (
             <TouchableOpacity
               onPress={() => navigation.navigate('Carpark', { 
                 facilityId: item.id,
@@ -177,15 +176,26 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
             >
               <View style={styles.carParkItemRow}>
                 <Text style={styles.textSize}>{item.name}</Text>
-                <Button 
-                  title='pin' 
-                  onPress={() => handlePinCarpark(item.id, item.name)}
-                />
+                {section.title === 'Pinned' ? 
+                  (
+                    <Button 
+                      title='Unpin'
+                      onPress={() => handleUnpinCarpark(item.id, item.name)}
+                    />
+                  )
+                  :
+                  (
+                    <Button 
+                      title='Pin'
+                      onPress={() => handlePinCarpark(item.id, item.name)}
+                    />
+                  )
+                }
               </View>
             </TouchableOpacity>
           )}
           renderSectionHeader={({ section: { title }}) => (
-            <View>
+            <View style={styles.sectionHeader}>
               <Text>{title}</Text>
             </View>
           )}
@@ -195,22 +205,11 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
 }
 
 const styles = StyleSheet.create({
-  textInput: {
-    borderStyle: 'solid',
-    borderWidth: 2,
-    borderRadius: 10,
-    width: '100%',
-    padding: 10,
-  },
   container: {
     flex: 1,
     flexDirection: 'column',
     alignItems: 'center',
     width: '100%'
-  },
-  inputContainer: {
-    width: '80%',
-    margin: 10
   },
   carParkListContainer: {
     width: '100%',
@@ -224,6 +223,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 5,
     marginBottom: 10
+  },
+  sectionHeader: {
+    width: '100%',
+    backgroundColor: '#a9a9a9'
   },
   textSize: {
     fontSize: 16
