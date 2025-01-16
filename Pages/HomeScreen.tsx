@@ -7,7 +7,6 @@ import { URL } from "../utils/api";
 import { API_KEY } from "../config";
 import { fetchPinnedCarparks, handleStoreCarparks, removePinnedCarpark } from '../utils/storage';
 import { SectionDataType, CarParkDataType } from '../utils/types';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<any>;
 type Props = {
@@ -16,8 +15,6 @@ type Props = {
 
 export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const [data, setData] = useState<SectionDataType[]>([]);
-  const [carparks, setCarparks] = useState<string[][]>([]);
-  const [pinnedData, setPinnedData] = useState<SectionDataType[]>([]);
   const [pinnedCarparks, setPinnedCarparks] = useState<{[key: string]: string}>({});
   const [pin, setPin] = useState<boolean>(false);
 
@@ -149,21 +146,9 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     })
   }
 
-  const handleClearAsync = async () => {
-    try {
-      await AsyncStorage.clear()
-    } catch(e) {
-      console.error(e);
-    }
-  }
-
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar />
-        <Button
-          title='clear'
-          onPress={() => handleClearAsync()}
-        />
         <SectionList
           style={styles.carParkListContainer}
           sections={data.filter((section) => section.data.length > 0)}
@@ -196,7 +181,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
           )}
           renderSectionHeader={({ section: { title }}) => (
             <View style={styles.sectionHeader}>
-              <Text>{title}</Text>
+              <Text style={styles.sectionHeaderText}>{title}</Text>
             </View>
           )}
         />
@@ -214,7 +199,6 @@ const styles = StyleSheet.create({
   carParkListContainer: {
     width: '100%',
     marginBottom: 10,
-    paddingHorizontal: 20
   },
   carParkItemRow: {
     flex: 1,
@@ -222,13 +206,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 5,
-    marginBottom: 10
+    marginBottom: 0,
+    marginHorizontal: 5
   },
   sectionHeader: {
     width: '100%',
-    backgroundColor: '#a9a9a9'
+    padding: 3,
+    backgroundColor: '#e6e6fa'
+  },
+  sectionHeaderText: {
+    // textDecorationLine: 'underline'
   },
   textSize: {
-    fontSize: 16
+    fontSize: 15
   }
 })
