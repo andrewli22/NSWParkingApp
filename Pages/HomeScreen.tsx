@@ -2,7 +2,7 @@ import React from 'react';
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
-import { SafeAreaView, Button, TextInput, StyleSheet, View, Text, TouchableOpacity, ScrollView, SectionList } from "react-native";
+import { SafeAreaView, Button, StyleSheet, View, Text, TouchableOpacity, SectionList } from "react-native";
 import { URL } from "../utils/api";
 import { API_KEY } from "../config";
 import { fetchPinnedCarparks, handleStoreCarparks, removePinnedCarpark } from '../utils/storage';
@@ -16,7 +16,6 @@ type Props = {
 export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const [data, setData] = useState<SectionDataType[]>([]);
   const [pinnedCarparks, setPinnedCarparks] = useState<{[key: string]: string}>({});
-  const [pin, setPin] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchCarparks = async () => {
