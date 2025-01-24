@@ -28,7 +28,7 @@ export default function App() {
   return (
     <NavigationContainer>
       <RootStack.Navigator screenOptions={{ headerShown: false }}>
-        <RootStack.Screen name='HomeDrawer' component={HomeDrawer} />
+        <RootStack.Screen name='HomeDrawer' component={HomeDrawer} options={{ title: 'Home' }}/>
         <RootStack.Screen name='Carpark' component={CarparkScreen} options={({route}) => ({ title: route.params.facilityName, headerShown: true })}/>
       </RootStack.Navigator>
     </NavigationContainer>
