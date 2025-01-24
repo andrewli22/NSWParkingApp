@@ -1,5 +1,5 @@
 export type RootStackParamList = {
-  Home: undefined;
+  HomeDrawer: undefined,
   Carpark: { facilityId: string, facilityName: string };
 }
 export interface SectionDataType {

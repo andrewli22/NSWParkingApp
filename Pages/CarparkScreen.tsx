@@ -11,7 +11,7 @@ import { PieChart } from 'react-native-gifted-charts';
 type Props = NativeStackScreenProps<RootStackParamList, 'Carpark'>;
 
 export const CarparkScreen = ({ route }: Props) => {
-  const { facilityId } = (route.params as RootStackParamList['Carpark']);
+  const { facilityId } = route.params;
   const [refreshing, setRefreshing] = useState(false);
   const [spots, setSpots] = useState<number>(0);
   const [total, setTotal] = useState<number>(0);
