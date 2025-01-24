@@ -1,33 +1,32 @@
 import React from "react"
-import { View, TextInput, StyleSheet} from "react-native"
+import { View, TextInput, StyleSheet, Text} from "react-native"
+import { TouchableOpacity } from "react-native-gesture-handler"
 
 export const FeedbackScreen = () => {
   return (
     <View style={styles.container}>
-      <View style={[styles.nameContainer, { marginTop: 20 }]}>
+      <View style={styles.nameContainer}>
         <TextInput
           placeholder="First Name"
-          style={styles.textInputStyles}
+          style={[styles.textInputStyles, { width: '50%' }]}
           />
         <TextInput
           placeholder="Last Name"
-          style={styles.textInputStyles}
+          style={[styles.textInputStyles, { width: '50%' }]}
           />
       </View>
-      <View>
-        <TextInput
-          placeholder="Email address"
-          style={[styles.textInputStyles, { width: '100%' }]}
-          />
-      </View>
-      <View>
-        <TextInput
-          multiline
-          placeholder="Enter feedback"
-          style={[styles.textInputStyles, { width: '100%', height: '60%' }]}
+      <TextInput
+        placeholder="Email address"
+        style={styles.textInputStyles}
         />
-      </View>
-      
+      <TextInput
+        multiline
+        placeholder="Enter feedback"
+        style={[styles.textInputStyles, { height: 200 }]}
+      />
+      <TouchableOpacity style={styles.submitButtonContainer}>
+        <Text style={styles.buttonText}>Submit</Text>
+      </TouchableOpacity>
     </View>
   )
 }
@@ -35,19 +34,28 @@ export const FeedbackScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignContent: 'center',
     gap: 20,
-    marginHorizontal: 10
+    marginHorizontal: 10,
+    marginTop: 30,
   },
   textInputStyles: {
-    borderColor: 'black',
-    borderWidth: 1.5,
+    borderWidth: 2,
     padding: 10,
     borderRadius: 10,
-    width: '50%'
   },
   nameContainer: {
     flexDirection: 'row',
-    gap: 5
+    justifyContent: 'space-between'
+  },
+  submitButtonContainer: {
+    backgroundColor: '#34ceff',
+    alignItems: 'center',
+    padding: 15,
+    borderRadius: 25
+  },
+  buttonText: {
+    fontWeight: 'bold',
+    color: 'white',
+    fontSize: 16
   }
 })
